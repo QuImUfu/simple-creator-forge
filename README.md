@@ -1,4 +1,4 @@
-Simple Item/Block Creator
+Simple Item/Block Creator (Forge)
 -----------
 This mod allows adding new Blocks and items.  
 Its not called simple cause its simple to use, 
