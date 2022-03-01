@@ -50,35 +50,33 @@ public abstract class GenericManualResourceLoader<T> {
 
     public void load() {
         config = new SimpleCreatorConfig();
-        ResourcePackList<ResourcePackInfo> resourcePackManager = new ResourcePackList<>(ResourcePackInfo::new);
-        resourcePackManager.addPackFinder(new ServerPackFinder());
-        resourcePackManager.addPackFinder(new FolderPackFinder(new File("./datapacks")));
-        
-        resourcePackManager.reloadPacksFromFinders();
-        List<ResourcePackInfo> ep = Lists.newArrayList(resourcePackManager.getEnabledPacks());
-        for (ResourcePackInfo rpp : resourcePackManager.getAllPacks()) {
+        ResourcePackList resourcePackManager = new ResourcePackList((a,required,b,c,d,e,f)->new ResourcePackInfo(a,true,b,c,d,e,f),
+                new ServerPackFinder(),
+                new FolderPackFinder(new File("./datapacks"), IPackNameDecorator.method_29486(SimpleCreatorMod.MOD_ID + "pack.global_datapack")));
+        resourcePackManager.scanPacks();
+        List<ResourcePackInfo> ep = Lists.newArrayList(resourcePackManager.getEnabledProfiles());
+        for (ResourcePackInfo rpp : resourcePackManager.getProfiles()) {
             if (!ep.contains(rpp)) {
-                rpp.getPriority().func_198993_a(ep, rpp, resourcePackProfile -> resourcePackProfile, false);
+                rpp.getInitialPosition().insert(ep, rpp, resourcePackProfile -> resourcePackProfile, false);
             }
         }
 
         
         ArrayList<Pair<ResourceLocation, JsonObject>> itemJsonList = new ArrayList<>();
         HashMap<ResourceLocation, JsonObject> itemJsonMap = Maps.newHashMap();
-        resourcePackManager.setEnabledPacks(ep);
         if (config.enableTestThings){
             Optional<ModFileResourcePack> orp = ResourcePackLoader.getResourcePackFor(SimpleCreatorMod.MOD_ID);
             if(orp.isPresent()){
                 ModFileResourcePack rp = orp.get();
-            Collection<ResourceLocation> resources = rp.func_225637_a_(ResourcePackType.SERVER_DATA, SimpleCreatorMod.MOD_ID, dataType, 5, s -> s.endsWith(".json"));
+            Collection<ResourceLocation> resources = rp.findResources(ResourcePackType.SERVER_DATA, SimpleCreatorMod.MOD_ID, dataType, 5, s -> s.endsWith(".json"));
                 for (ResourceLocation id : resources) {
                     if (config.extendedLogging)
                         log(Level.INFO, "found: " + id.toString() + " in Pack: " + rp.getName());
                     ResourceLocation idNice = new ResourceLocation(id.getNamespace(), getName(id));
                     try {
-                        InputStream is = rp.getResourceStream(ResourcePackType.SERVER_DATA, id);
+                        InputStream is = rp.open(ResourcePackType.SERVER_DATA, id);
                         Reader r = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
-                        JsonObject jo = JSONUtils.fromJson(GSON, r, JsonObject.class);
+                        JsonObject jo = JSONUtils.deserialize(GSON, r, JsonObject.class);
                         if (jo != null)
                             if (jo.entrySet().isEmpty()) {
                                 itemJsonMap.remove(idNice);
@@ -96,20 +94,22 @@ public abstract class GenericManualResourceLoader<T> {
                     }
                 }}
         }
-        for (ResourcePackInfo rpp : resourcePackManager.getEnabledPacks()) {
-            IResourcePack rp = rpp.getResourcePack();
+        log(Level.INFO, "Loading ResourcePack " + resourcePackManager.getEnabledProfiles());
+        log(Level.INFO, "Loading ResourcePack " + resourcePackManager.getProfiles());
+        for (ResourcePackInfo rpp : resourcePackManager.getEnabledProfiles()) {
+            IResourcePack rp = rpp.createResourcePack();
             log(Level.INFO, "Loading ResourcePack " + rp.getName());
-            for (String ns : rp.getResourceNamespaces(ResourcePackType.SERVER_DATA)) {
+            for (String ns : rp.getNamespaces(ResourcePackType.SERVER_DATA)) {
                 log(Level.INFO, "Loading namespace " + ns);
-                Collection<ResourceLocation> resources = rp.func_225637_a_(ResourcePackType.SERVER_DATA, ns, dataType, 5, s -> s.endsWith(".json"));
+                Collection<ResourceLocation> resources = rp.findResources(ResourcePackType.SERVER_DATA, ns, dataType, 5, s -> s.endsWith(".json"));
                 for (ResourceLocation id : resources) {
                     if (config.extendedLogging)
                         log(Level.INFO, "found: " + id.toString() + " in Pack: " + rp.getName());
                     ResourceLocation idNice = new ResourceLocation(id.getNamespace(), getName(id));
                     try {
-                        InputStream is = rp.getResourceStream(ResourcePackType.SERVER_DATA, id);
+                        InputStream is = rp.open(ResourcePackType.SERVER_DATA, id);
                         Reader r = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
-                        JsonObject jo = JSONUtils.fromJson(GSON, r, JsonObject.class);
+                        JsonObject jo = JSONUtils.deserialize(GSON, r, JsonObject.class);
                         if (jo != null)
                             if (jo.entrySet().isEmpty()) {
                                 itemJsonMap.remove(idNice);

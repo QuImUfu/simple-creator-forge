@@ -41,8 +41,8 @@ public class ItemResourceLoader extends GenericManualResourceLoader<Item> {
         String group = JSONUtils.getString(jo, "group", "misc");
         ItemGroup g = findGroup(group);
         int durability = JSONUtils.getInt(jo, "durability", 0);
-        byte stackSize = JSONUtils.func_219795_a(jo, "stackSize", (byte) 1);
-        boolean isFood = JSONUtils.hasField(jo, "food");
+        byte stackSize = JSONUtils.getByte(jo, "stackSize", (byte) 1);
+        boolean isFood = JSONUtils.hasElement(jo, "food");
         String rarity = JSONUtils.getString(jo, "rarity", "common");
 
 
@@ -53,8 +53,8 @@ public class ItemResourceLoader extends GenericManualResourceLoader<Item> {
                 log(Level.WARN, "durability does not work with food");
                 log(Level.WARN, "ignoring");
             }
-            settings.maxStackSize(stackSize);
-            JsonObject jsonFoodObject = JSONUtils.getJsonObject(jo, "food");
+            settings.maxCount(stackSize);
+            JsonObject jsonFoodObject = JSONUtils.getObject(jo, "food");
             settings.food(deserializeFoodComponent(jsonFoodObject));
         } else if (durability != 0 && stackSize != 1) {
             log(Level.WARN, "durability and stackSize do not work together");
@@ -64,7 +64,7 @@ public class ItemResourceLoader extends GenericManualResourceLoader<Item> {
             if (durability != 0) {
                 settings.maxDamage(durability);
             } else {
-                settings.maxStackSize(stackSize);
+                settings.maxCount(stackSize);
             }
         }
         settings.rarity(findRarity(rarity));
@@ -80,15 +80,15 @@ public class ItemResourceLoader extends GenericManualResourceLoader<Item> {
         Food fc;
         Food.Builder fcb = new Food.Builder();
         fcb.hunger(JSONUtils.getInt(jo, "hunger", 4));
-        fcb.saturation(JSONUtils.getFloat(jo, "saturationModifier", 0.3F));
+        fcb.saturationModifier(JSONUtils.getFloat(jo, "saturationModifier", 0.3F));
         if (JSONUtils.getBoolean(jo, "isAlwaysEdible", false))
-            fcb.setAlwaysEdible();
+            fcb.alwaysEdible();
         if (JSONUtils.getBoolean(jo, "isWolfFood", false))
             fcb.meat();
         if (JSONUtils.getBoolean(jo, "isFast", false))
-            fcb.fastToEat();
-        if (JSONUtils.isJsonArray(jo, "effects")) {
-            JsonArray jsonEffectsArray = JSONUtils.getJsonArray(jo, "effects");
+            fcb.snack();
+        if (JSONUtils.hasArray(jo, "effects")) {
+            JsonArray jsonEffectsArray = JSONUtils.getArray(jo, "effects");
             deserializeEffects(fcb, jsonEffectsArray);
         }
         fc = fcb.build();
@@ -103,9 +103,9 @@ public class ItemResourceLoader extends GenericManualResourceLoader<Item> {
             boolean ambient = false;
             boolean visible = true;
             float chance = 1.F;
-            JsonObject jo = JSONUtils.getJsonObject(e, "effects");
+            JsonObject jo = JSONUtils.asObject(e, "effects");
             String effect = JSONUtils.getString(jo, "effect");
-            ResourceLocation ei = ResourceLocation.tryCreate(effect);
+            ResourceLocation ei = ResourceLocation.tryParse(effect);
             if (ei != null) {
                 Effect se = ForgeRegistries.POTIONS.getValue(ei);
                 if (se != null) {
@@ -123,7 +123,7 @@ public class ItemResourceLoader extends GenericManualResourceLoader<Item> {
             ambient = JSONUtils.getBoolean(jo, "ambient", ambient);
             visible = JSONUtils.getBoolean(jo, "visible", visible);
             chance = JSONUtils.getFloat(jo, "chance", chance);
-            fcb.effect(new EffectInstance(type, duration, amplifier, ambient, visible), chance);
+            fcb.statusEffect(new EffectInstance(type, duration, amplifier, ambient, visible), chance);
         }
     }
 
@@ -139,12 +139,12 @@ public class ItemResourceLoader extends GenericManualResourceLoader<Item> {
 
     public static ItemGroup findGroup(String filter) {
         for (ItemGroup g : ItemGroup.GROUPS) {
-            if (g.getPath().toLowerCase().equals(filter.toLowerCase())) {
+            if (g.getName().toLowerCase().equals(filter.toLowerCase())) {
                 return g;
             }
         }
         log(Level.WARN, "Item Group " + filter + " not found, using misc");
-        log(Level.INFO, "Valid groups:" + Arrays.stream(ItemGroup.GROUPS).map(ItemGroup::getPath).map(s -> s + "\n").collect(Collectors.joining()));
+        log(Level.INFO, "Valid groups:" + Arrays.stream(ItemGroup.GROUPS).map(ItemGroup::getName).map(s -> s + "\n").collect(Collectors.joining()));
         return ItemGroup.MISC;
     }
 
