@@ -1,0 +1,17 @@
+{
+  "material": "ice",
+  "mapColor": "yellow",
+  "collidable": true,
+  "soundGroup": "wool",
+  "burnChance": 0,
+  "spreadChance": 100,
+  "dropTableId": "minecraft:blocks/diamond_ore",
+  "lightLevel": 1,
+  "explosionResistance": 5.0,
+  "hardness": 0.5,
+  "slipperiness": 0.6,
+  "slowDownMultiplier": 2.0,
+  "jumpVelocityMultiplier": 2.0,
+  "opaque": true,
+  "itemGroup": "food"
+}
